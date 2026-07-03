@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 830">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#dededd"/>
+      <stop offset="0.09" stop-color="#f7f6f4"/>
+      <stop offset="0.32" stop-color="#ffffff"/>
+      <stop offset="0.62" stop-color="#fdfdfc"/>
+      <stop offset="0.9" stop-color="#efeeec"/>
+      <stop offset="1" stop-color="#d7d6d4"/>
+    </linearGradient>
+    <linearGradient id="lid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#303030"/>
+      <stop offset="0.4" stop-color="#0e0e0e"/>
+      <stop offset="1" stop-color="#1c1c1c"/>
+    </linearGradient>
+    <linearGradient id="band" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#191512"/>
+      <stop offset="0.5" stop-color="#26211b"/>
+      <stop offset="1" stop-color="#15110e"/>
+    </linearGradient>
+  </defs>
+  <!-- ручка -->
+  <path d="M74 250 C 74 190, 170 148, 400 148 C 630 148, 726 190, 726 250" fill="none" stroke="#b5b3b0" stroke-width="6"/>
+  <circle cx="74" cy="252" r="9" fill="#c6c4c1"/>
+  <circle cx="726" cy="252" r="9" fill="#c6c4c1"/>
+  <!-- корпус -->
+  <path d="M62 196 L 108 774 Q 112 812 400 812 Q 688 812 692 774 L 738 196 Z" fill="url(#body)"/>
+  <!-- крышка -->
+  <ellipse cx="400" cy="182" rx="348" ry="50" fill="url(#lid)"/>
+  <path d="M52 182 L 58 216 Q 400 286 742 216 L 748 182 Q 400 252 52 182 Z" fill="#0b0b0b"/>
+  <ellipse cx="400" cy="176" rx="312" ry="40" fill="#171717"/>
+  <ellipse cx="400" cy="172" rx="262" ry="31" fill="#090909"/>
+  <ellipse cx="316" cy="160" rx="120" ry="16" fill="#333333" opacity="0.45"/>
+  <!-- росчерки этикетки -->
+  <path d="M112 452 C 320 384, 520 540, 692 414" fill="none" stroke="#cfae72" stroke-width="2" opacity="0.85"/>
+  <path d="M104 484 C 330 414, 500 572, 688 452" fill="none" stroke="#d8d4cc" stroke-width="2"/>
+  <path d="M122 524 C 340 452, 490 592, 680 502" fill="none" stroke="#e4e0d8" stroke-width="1.5"/>
+  <!-- орнамент -->
+  <g stroke="#b18a4d" stroke-width="2.5" fill="none">
+    <path d="M248 290 L 372 290 M428 290 L 552 290"/>
+    <path d="M400 272 L 418 290 L 400 308 L 382 290 Z" fill="#c3a06a" stroke="none"/>
+  </g>
+  <text x="400" y="376" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="86" letter-spacing="10" fill="#16130f">ЭКСПЕРТ</text>
+  <text x="400" y="430" text-anchor="middle" font-family="Georgia, serif" font-size="30" letter-spacing="14" fill="#2e2a24">КЛЕЙ ДЛЯ ПАРКЕТА</text>
+  <rect x="170" y="458" width="460" height="46" rx="6" fill="#c3a06a"/>
+  <text x="400" y="490" text-anchor="middle" font-family="Georgia, serif" font-size="24" font-weight="bold" letter-spacing="1" fill="#ffffff">2-к жестко-эластичный</text>
+  <!-- чёрная лента -->
+  <path d="M92 576 L 708 576 L 702 684 L 98 684 Z" fill="url(#band)"/>
+  <path d="M92 572 L 708 572 L 708 576 L 92 576 Z" fill="#cfae72"/>
+  <path d="M98 684 L 702 684 L 702 688 L 98 688 Z" fill="#cfae72"/>
+  <text x="400" y="640" text-anchor="middle" font-family="Georgia, serif" font-size="17.5" letter-spacing="1" fill="#f3ecdd">ЭКОЛОГИЧНЫЙ · НАДЕЖНЫЙ · ПРОФЕССИОНАЛЬНЫЙ</text>
+</svg>
