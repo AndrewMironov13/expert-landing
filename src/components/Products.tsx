@@ -37,7 +37,7 @@ export function Products() {
             }`}
           >
             <span className="font-mono text-[0.62rem] uppercase tracking-[0.18em] text-gold-600">{p.kind}</span>
-            <span className="mt-1 block text-sm font-semibold capitalize leading-tight text-ink">
+            <span className="mt-1 block text-sm font-semibold leading-tight text-ink">
               {p.elasticity}
             </span>
             <span className="mt-1 block font-mono text-[0.62rem] text-muted">{p.id}</span>

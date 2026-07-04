@@ -15,7 +15,7 @@ export interface Product {
   hardnessScale: 'Шор А' | 'Шор Д'
   hardnessValue: number
   shear: string
-  elasticity: 'жесткий' | 'жестко-эластичный' | 'эластичный'
+  elasticity: 'Жесткий' | 'Жестко-эластичный' | 'Эластичный'
   pack: string
   packKg: number
   ratio?: string
@@ -38,7 +38,7 @@ export const products: Product[] = [
     hardnessScale: 'Шор А',
     hardnessValue: 50,
     shear: '≥ 3,0 Н/мм²',
-    elasticity: 'жесткий',
+    elasticity: 'Жесткий',
     pack: 'Ведро 15 кг',
     packKg: 15,
     tu: 'ТУ 20.52.10-011-40544164-2025',
@@ -63,7 +63,7 @@ export const products: Product[] = [
     hardnessScale: 'Шор А',
     hardnessValue: 45,
     shear: '≥ 2,0 Н/мм²',
-    elasticity: 'жестко-эластичный',
+    elasticity: 'Жестко-эластичный',
     pack: 'Ведро 15 кг',
     packKg: 15,
     tu: 'ТУ 20.52.10-011-40544164-2025',
@@ -88,7 +88,7 @@ export const products: Product[] = [
     hardnessScale: 'Шор А',
     hardnessValue: 40,
     shear: '≥ 1,0 Н/мм²',
-    elasticity: 'эластичный',
+    elasticity: 'Эластичный',
     pack: 'Ведро 15 кг',
     packKg: 15,
     tu: 'ТУ 20.52.10-011-40544164-2025',
@@ -113,7 +113,7 @@ export const products: Product[] = [
     hardnessScale: 'Шор Д',
     hardnessValue: 45,
     shear: '≥ 3,0 Н/мм²',
-    elasticity: 'жесткий',
+    elasticity: 'Жесткий',
     pack: 'Ведро 8,9 кг + отвердитель 1,1 кг',
     packKg: 10,
     ratio: 'А:Б — 8:1',
@@ -139,7 +139,7 @@ export const products: Product[] = [
     hardnessScale: 'Шор Д',
     hardnessValue: 40,
     shear: '≥ 2,0 Н/мм²',
-    elasticity: 'жестко-эластичный',
+    elasticity: 'Жестко-эластичный',
     pack: 'Ведро 8,9 кг + отвердитель 1,1 кг',
     packKg: 10,
     ratio: 'А:Б — 7:1',

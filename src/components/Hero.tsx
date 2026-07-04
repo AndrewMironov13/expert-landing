@@ -10,15 +10,17 @@ import {
 import { asset } from '@/lib/utils'
 
 /* ----------------------------------------------------------------------------
-   Скролл-кино «ЭКСПЕРТ»: фотореалистичный ролик (Higgsfield / Seedance 2.0)
-   фоном на весь экран, перемотка привязана к скроллу с плавным «догоном».
-   Сцены ролика (15 c): витрина → крышка → пролив → гребёнка → паркет.
+   Скролл-кино «ЭКСПЕРТ»: ролик Higgsfield разложен на 180 JPEG-кадров,
+   отрисовка на canvas 60 fps с межкадровым блендингом — идеально гладкий скраб
+   без задержек видео-декодера. Сцены: витрина → крышка → пролив → гребёнка → паркет.
 ---------------------------------------------------------------------------- */
 
-const VIDEO_SRC = asset('/assets/hero/hero.mp4')
+const FRAME_COUNT = 180
 const POSTER_SRC = asset('/assets/hero/poster.jpg')
+const frameSrc = (i: number) =>
+  asset(`/assets/hero/frames/frame-${String(i).padStart(3, '0')}.jpg`)
 
-/* Подписи кадров поверх видео */
+/* Подписи кадров поверх сцены */
 function StageCaption({
   progress,
   at,
@@ -49,7 +51,7 @@ function StageCaption({
 
 export function Hero() {
   const ref = useRef<HTMLElement>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const reduced = useReducedMotion()
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -58,27 +60,76 @@ export function Hero() {
   /* Спринг — только для текстовых оверлеев */
   const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 26, mass: 0.35 })
 
-  /* Перемотка видео: экспоненциальный «догон» + не ставим новый seek, пока идёт старый */
+  /* Кадровый плеер: догоняющая интерполяция + блендинг соседних кадров */
   useEffect(() => {
     if (reduced) return
-    const video = videoRef.current
-    if (!video) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const images: HTMLImageElement[] = []
+    const loaded = new Uint8Array(FRAME_COUNT)
+    for (let i = 0; i < FRAME_COUNT; i++) {
+      const img = new Image()
+      img.decoding = 'async'
+      img.src = frameSrc(i)
+      img.onload = () => { loaded[i] = 1 }
+      images.push(img)
+    }
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const fit = () => {
+      canvas.width = Math.round(canvas.clientWidth * dpr)
+      canvas.height = Math.round(canvas.clientHeight * dpr)
+    }
+    fit()
+    window.addEventListener('resize', fit)
+
+    /* cover-отрисовка кадра на весь canvas */
+    const drawCover = (img: HTMLImageElement, alpha: number) => {
+      const cw = canvas.width, ch = canvas.height
+      const iw = img.naturalWidth, ih = img.naturalHeight
+      if (!iw || !ih) return
+      const s = Math.max(cw / iw, ch / ih)
+      const w = iw * s, h = ih * s
+      ctx.globalAlpha = alpha
+      ctx.drawImage(img, (cw - w) / 2, (ch - h) / 2, w, h)
+    }
+    const nearestLoaded = (i: number) => {
+      for (let d = 0; d < FRAME_COUNT; d++) {
+        if (i - d >= 0 && loaded[i - d]) return i - d
+        if (i + d < FRAME_COUNT && loaded[i + d]) return i + d
+      }
+      return -1
+    }
+
     let raf = 0
     let current: number | null = null
-    const sync = () => {
-      raf = requestAnimationFrame(sync)
-      const d = video.duration
-      if (!d || Number.isNaN(d) || video.readyState < 2) return
-      const target = Math.min(d - 0.05, Math.max(0, scrollYProgress.get() * d))
-      if (current === null) current = target /* старт без «отмотки с нуля» */
-      current += (target - current) * 0.16
-      if (Math.abs(target - current) < 0.003) current = target
-      if (!video.seeking && Math.abs(video.currentTime - current) > 1 / 60) {
-        video.currentTime = current
-      }
+    let lastDrawn = -1
+    const tick = () => {
+      raf = requestAnimationFrame(tick)
+      const target = scrollYProgress.get() * (FRAME_COUNT - 1)
+      if (current === null) current = target
+      current += (target - current) * 0.17
+      if (Math.abs(target - current) < 0.02) current = target
+      if (Math.abs(current - lastDrawn) < 0.015 && canvas.width) return
+
+      const base = Math.floor(current)
+      const frac = current - base
+      const a = nearestLoaded(base)
+      if (a < 0) return
+      drawCover(images[a], 1)
+      const b = base + 1
+      if (frac > 0.02 && b < FRAME_COUNT && loaded[b]) drawCover(images[b], frac)
+      ctx.globalAlpha = 1
+      lastDrawn = current
     }
-    raf = requestAnimationFrame(sync)
-    return () => cancelAnimationFrame(raf)
+    raf = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', fit)
+    }
   }, [scrollYProgress, reduced])
 
   /* Интро поверх тёмного первого кадра: гаснет при первом же движении */
@@ -112,16 +163,12 @@ export function Hero() {
   return (
     <section ref={ref} aria-label="ЭКСПЕРТ — клей для паркета" className="relative h-[520vh]">
       <div className="sticky top-0 h-screen overflow-hidden bg-[#14100b]">
-        {/* Видео-сцена: фон на весь экран с первого кадра */}
-        <video
-          ref={videoRef}
-          src={VIDEO_SRC}
-          poster={POSTER_SRC}
-          muted
-          playsInline
-          preload="auto"
+        {/* Кадровая сцена */}
+        <canvas
+          ref={canvasRef}
           aria-hidden
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full"
+          style={{ backgroundImage: `url(${POSTER_SRC})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         />
 
         {/* Интро: светлый заголовок в воздухе тёмной студии, над ведром */}
