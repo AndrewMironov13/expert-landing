@@ -13,13 +13,8 @@ const links = [
 export function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  /* Наверху шапка лежит на тёмном видео — включаем светлую версию */
+  const onDark = !scrolled && !open
 
   return (
     <header
@@ -27,39 +22,51 @@ export function Nav() {
         scrolled ? 'glass py-3' : 'bg-transparent py-5'
       }`}
     >
+      <NavScrollWatcher onChange={setScrolled} />
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5">
-        <Logo />
+        <Logo light={onDark} />
         <nav className="hidden items-center gap-7 md:flex" aria-label="Основная навигация">
           {links.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="text-sm font-medium text-ink-soft transition hover:text-gold-600"
+              className={`text-sm font-medium transition ${
+                onDark ? 'text-[#ece3d0] hover:text-gold-200' : 'text-ink-soft hover:text-gold-600'
+              }`}
             >
               {l.label}
             </a>
           ))}
         </nav>
         <div className="hidden items-center gap-4 md:flex">
-          <a href={company.phoneHref} className="hidden whitespace-nowrap font-mono text-sm text-ink-soft hover:text-gold-600 lg:inline">
+          <a
+            href={company.phoneHref}
+            className={`hidden whitespace-nowrap font-mono text-sm transition lg:inline ${
+              onDark ? 'text-[#ece3d0] hover:text-gold-200' : 'text-ink-soft hover:text-gold-600'
+            }`}
+          >
             {company.phone}
           </a>
           <a
             href="#dealer"
-            className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-paper transition hover:bg-ink-soft"
+            className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+              onDark ? 'bg-gold-400 text-ink hover:bg-gold-300' : 'bg-ink text-paper hover:bg-ink-soft'
+            }`}
           >
             Стать дилером
           </a>
         </div>
         <button
           onClick={() => setOpen(!open)}
-          className="flex h-10 w-10 items-center justify-center rounded-full border md:hidden"
+          className={`flex h-10 w-10 items-center justify-center rounded-full border md:hidden ${
+            onDark ? 'border-gold-200/40' : ''
+          }`}
           aria-label={open ? 'Закрыть меню' : 'Открыть меню'}
           aria-expanded={open}
         >
           <div className="space-y-1.5">
-            <div className={`h-px w-5 bg-ink transition ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
-            <div className={`h-px w-5 bg-ink transition ${open ? '-translate-y-[3px] -rotate-45' : ''}`} />
+            <div className={`h-px w-5 transition ${onDark ? 'bg-[#f6efe0]' : 'bg-ink'} ${open ? 'translate-y-[3.5px] rotate-45' : ''}`} />
+            <div className={`h-px w-5 transition ${onDark ? 'bg-[#f6efe0]' : 'bg-ink'} ${open ? '-translate-y-[3px] -rotate-45' : ''}`} />
           </div>
         </button>
       </div>
@@ -82,4 +89,15 @@ export function Nav() {
       )}
     </header>
   )
+}
+
+/* Отдельный подписчик скролла, чтобы не создавать лишних ререндеров ссылок */
+function NavScrollWatcher({ onChange }: { onChange: (scrolled: boolean) => void }) {
+  useEffect(() => {
+    const onScroll = () => onChange(window.scrollY > 24)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [onChange])
+  return null
 }

@@ -7,18 +7,16 @@ import {
   useReducedMotion,
   type MotionValue,
 } from 'framer-motion'
+import { asset } from '@/lib/utils'
 
 /* ----------------------------------------------------------------------------
-   Скролл-кино «ЭКСПЕРТ»: фотореалистичный ролик (Higgsfield / Seedance 2.0),
-   перемотка привязана к скроллу. Тайминг сцен в ролике (15 c):
-   0–20%  витрина ведра (старт — белый кадр, уходит в тёмную студию)
-   20–45% крышка поднимается, виден клей
-   45–70% пролив густого клея
-   70–100% шпатель → укладка дубовой доски → пол заполняет кадр
+   Скролл-кино «ЭКСПЕРТ»: фотореалистичный ролик (Higgsfield / Seedance 2.0)
+   фоном на весь экран, перемотка привязана к скроллу с плавным «догоном».
+   Сцены ролика (15 c): витрина → крышка → пролив → гребёнка → паркет.
 ---------------------------------------------------------------------------- */
 
-const VIDEO_SRC = '/assets/hero/hero.mp4'
-const POSTER_SRC = '/assets/hero/poster.jpg'
+const VIDEO_SRC = asset('/assets/hero/hero.mp4')
+const POSTER_SRC = asset('/assets/hero/poster.jpg')
 
 /* Подписи кадров поверх видео */
 function StageCaption({
@@ -42,7 +40,7 @@ function StageCaption({
       className={`pointer-events-none absolute z-30 max-w-[22rem] ${className}`}
     >
       <p className="eyebrow mb-3 !text-gold-300">{eyebrow}</p>
-      <p className="font-display text-2xl leading-snug text-[#f8f2e4] [text-shadow:0_1px_3px_rgba(20,14,6,0.9),0_4px_26px_rgba(20,14,6,0.8)] md:text-3xl">
+      <p className="font-display text-2xl leading-snug text-[#f6efe0] drop-shadow-[0_2px_18px_rgba(0,0,0,0.75)] md:text-3xl">
         {children}
       </p>
     </motion.div>
@@ -57,35 +55,36 @@ export function Hero() {
     target: ref,
     offset: ['start start', 'end end'],
   })
-  const progress = useSpring(scrollYProgress, { stiffness: 90, damping: 24, mass: 0.4 })
+  /* Спринг — только для текстовых оверлеев */
+  const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 26, mass: 0.35 })
 
-  /* Перемотка видео скроллом */
+  /* Перемотка видео: экспоненциальный «догон» + не ставим новый seek, пока идёт старый */
   useEffect(() => {
     if (reduced) return
     const video = videoRef.current
     if (!video) return
     let raf = 0
+    let current: number | null = null
     const sync = () => {
-      const d = video.duration
-      if (d && !Number.isNaN(d) && video.readyState >= 2) {
-        const t = Math.min(d - 0.05, progress.get() * d)
-        if (Math.abs(video.currentTime - t) > 0.034) video.currentTime = t
-      }
       raf = requestAnimationFrame(sync)
+      const d = video.duration
+      if (!d || Number.isNaN(d) || video.readyState < 2) return
+      const target = Math.min(d - 0.05, Math.max(0, scrollYProgress.get() * d))
+      if (current === null) current = target /* старт без «отмотки с нуля» */
+      current += (target - current) * 0.16
+      if (Math.abs(target - current) < 0.003) current = target
+      if (!video.seeking && Math.abs(video.currentTime - current) > 1 / 60) {
+        video.currentTime = current
+      }
     }
     raf = requestAnimationFrame(sync)
     return () => cancelAnimationFrame(raf)
-  }, [progress, reduced])
+  }, [scrollYProgress, reduced])
 
-  /* Кадр 1: заголовок на светлом старте */
-  const introOpacity = useTransform(progress, [0, 0.07], [1, 0])
-  const introY = useTransform(progress, [0, 0.07], [0, -60])
-  const hintOpacity = useTransform(progress, [0, 0.05], [1, 0])
-
-  /* Видео-полотно: на старте уменьшено под заголовком, растёт на весь экран */
-  const videoScale = useTransform(progress, [0, 0.14], [0.72, 1])
-  const videoY = useTransform(progress, [0, 0.14], ['12vh', '0vh'])
-  const videoRadius = useTransform(progress, [0, 0.14], [28, 0])
+  /* Интро поверх тёмного первого кадра: гаснет при первом же движении */
+  const introOpacity = useTransform(progress, [0, 0.06], [1, 0])
+  const introY = useTransform(progress, [0, 0.06], [0, -40])
+  const hintOpacity = useTransform(progress, [0, 0.045], [1, 0])
 
   /* Финал: затемнение пола + CTA */
   const finalOpacity = useTransform(progress, [0.88, 0.96], [0, 1])
@@ -112,34 +111,31 @@ export function Hero() {
 
   return (
     <section ref={ref} aria-label="ЭКСПЕРТ — клей для паркета" className="relative h-[520vh]">
-      <div className="sticky top-0 h-screen overflow-hidden bg-paper">
-        {/* Видео-сцена */}
-        <motion.div
-          style={{ scale: videoScale, y: videoY, borderRadius: videoRadius }}
-          className="absolute inset-0 overflow-hidden shadow-[0_40px_90px_-40px_rgba(58,42,16,0.45)]"
+      <div className="sticky top-0 h-screen overflow-hidden bg-[#14100b]">
+        {/* Видео-сцена: фон на весь экран с первого кадра */}
+        <video
+          ref={videoRef}
+          src={VIDEO_SRC}
+          poster={POSTER_SRC}
+          muted
+          playsInline
+          preload="auto"
           aria-hidden
-        >
-          <video
-            ref={videoRef}
-            src={VIDEO_SRC}
-            poster={POSTER_SRC}
-            muted
-            playsInline
-            preload="auto"
-            className="h-full w-full object-cover"
-          />
-        </motion.div>
+          className="absolute inset-0 h-full w-full object-cover"
+        />
 
-        {/* Кадр 1 — заголовок */}
+        {/* Интро: светлый заголовок в воздухе тёмной студии, над ведром */}
         <motion.div
           style={{ opacity: introOpacity, y: introY }}
-          className="absolute inset-x-0 top-[7vh] z-30 px-6 text-center md:top-[9vh]"
+          className="absolute inset-x-0 top-[12vh] z-30 px-6 text-center md:top-[13vh]"
         >
-          <p className="eyebrow mb-4">Каспол · Дзержинск · линейка для профессионалов</p>
-          <h1 className="label-caps text-[clamp(2.6rem,9vw,6rem)] leading-none">Эксперт</h1>
+          <p className="eyebrow mb-3 !text-gold-300">Каспол · Дзержинск · линейка для профессионалов</p>
+          <h1 className="label-caps text-[clamp(2.6rem,7vw,4.8rem)] leading-none text-[#f6efe0] drop-shadow-[0_2px_24px_rgba(0,0,0,0.55)]">
+            Эксперт
+          </h1>
           <div className="mx-auto mt-4 flex max-w-md items-center gap-4">
             <div className="hairline-gold flex-1" />
-            <p className="label-caps text-sm text-ink-soft md:text-base">Клей для паркета</p>
+            <p className="label-caps text-sm text-gold-100 md:text-base">Клей для паркета</p>
             <div className="hairline-gold flex-1" />
           </div>
         </motion.div>
@@ -149,7 +145,7 @@ export function Hero() {
           style={{ opacity: hintOpacity }}
           className="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 text-center"
         >
-          <p className="font-mono text-[0.68rem] uppercase tracking-[0.3em] text-muted">
+          <p className="font-mono text-[0.68rem] uppercase tracking-[0.3em] text-gold-200/80">
             листайте — ведро откроется
           </p>
           <motion.div

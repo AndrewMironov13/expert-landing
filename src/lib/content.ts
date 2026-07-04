@@ -1,3 +1,5 @@
+import { asset } from './utils'
+
 /* Контент линейки ЭКСПЕРТ — данные из техничек ООО «Каспол» (ТУ 2025 г.) */
 
 export type ProductId = '156-3' | '156-2' | '156-1' | '146-1' | '146-2'
@@ -48,7 +50,7 @@ export const products: Product[] = [
       'Звукоизоляция ударного шума',
     ],
     bestFor: 'Массивная доска и штучный паркет, где нужна жёсткая фиксация без 2К-химии',
-    image: '/assets/products/156-3.png',
+    image: asset('/assets/products/156-3.png'),
   },
   {
     id: '156-2',
@@ -73,7 +75,7 @@ export const products: Product[] = [
       'Тёплый пол и экзотические породы',
     ],
     bestFor: 'Универсальный выбор: инженерная доска, паркет на тёплом полу',
-    image: '/assets/products/156-2.png',
+    image: asset('/assets/products/156-2.png'),
   },
   {
     id: '156-1',
@@ -98,7 +100,7 @@ export const products: Product[] = [
       'Работает по сложным основаниям',
     ],
     bestFor: 'Крупноформатная и «беспокойная» древесина, помещения с перепадами влажности',
-    image: '/assets/products/156-1.png',
+    image: asset('/assets/products/156-1.png'),
   },
   {
     id: '146-1',
@@ -124,7 +126,7 @@ export const products: Product[] = [
       'Влагостойкий, для перепадов температур',
     ],
     bestFor: 'Ответственные объекты: коммерческие площади, мозаичный и модульный паркет',
-    image: '/assets/products/146-1.png',
+    image: asset('/assets/products/146-1.png'),
   },
   {
     id: '146-2',
@@ -150,7 +152,7 @@ export const products: Product[] = [
       'Экзотические породы, тёплый пол',
     ],
     bestFor: 'Широкая массивная доска и экзотика — там, где жёсткий 2К может «зажать» дерево',
-    image: '/assets/products/146-2.png',
+    image: asset('/assets/products/146-2.png'),
   },
 ]
 
