@@ -19,6 +19,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-use-measure": "^2.1.7",
+    "scrolly-video": "^0.0.24",
     "tailwind-merge": "^3.6.0",
     "three": "^0.185.0"
   },

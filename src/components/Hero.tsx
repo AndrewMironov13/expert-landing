@@ -7,18 +7,17 @@ import {
   useReducedMotion,
   type MotionValue,
 } from 'framer-motion'
+import ScrollyVideo from 'scrolly-video/dist/ScrollyVideo.js'
 import { asset } from '@/lib/utils'
 
 /* ----------------------------------------------------------------------------
-   Скролл-кино «ЭКСПЕРТ»: ролик Higgsfield разложен на 180 JPEG-кадров,
-   отрисовка на canvas 60 fps с межкадровым блендингом — идеально гладкий скраб
-   без задержек видео-декодера. Сцены: витрина → крышка → пролив → гребёнка → паркет.
+   Скролл-кино «ЭКСПЕРТ»: ролик Higgsfield 1080p, скраб через ScrollyVideo —
+   WebCodecs декодирует кадры заранее и рисует на canvas в полном качестве,
+   перемотка сглаживается встроенной анимацией. Fallback для Safari — video.
 ---------------------------------------------------------------------------- */
 
-const FRAME_COUNT = 180
+const VIDEO_SRC = asset('/assets/hero/hero.mp4')
 const POSTER_SRC = asset('/assets/hero/poster.jpg')
-const frameSrc = (i: number) =>
-  asset(`/assets/hero/frames/frame-${String(i).padStart(3, '0')}.jpg`)
 
 /* Подписи кадров поверх сцены */
 function StageCaption({
@@ -51,7 +50,7 @@ function StageCaption({
 
 export function Hero() {
   const ref = useRef<HTMLElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const playerRef = useRef<HTMLDivElement>(null)
   const reduced = useReducedMotion()
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -60,75 +59,57 @@ export function Hero() {
   /* Спринг — только для текстовых оверлеев */
   const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 26, mass: 0.35 })
 
-  /* Кадровый плеер: догоняющая интерполяция + блендинг соседних кадров */
+  /* ScrollyVideo: WebCodecs-декодер рисует кадры 1080p на canvas, скраб без лагов */
   useEffect(() => {
     if (reduced) return
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const images: HTMLImageElement[] = []
-    const loaded = new Uint8Array(FRAME_COUNT)
-    for (let i = 0; i < FRAME_COUNT; i++) {
-      const img = new Image()
-      img.decoding = 'async'
-      img.src = frameSrc(i)
-      img.onload = () => { loaded[i] = 1 }
-      images.push(img)
-    }
-
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    const fit = () => {
-      canvas.width = Math.round(canvas.clientWidth * dpr)
-      canvas.height = Math.round(canvas.clientHeight * dpr)
-    }
-    fit()
-    window.addEventListener('resize', fit)
-
-    /* cover-отрисовка кадра на весь canvas */
-    const drawCover = (img: HTMLImageElement, alpha: number) => {
-      const cw = canvas.width, ch = canvas.height
-      const iw = img.naturalWidth, ih = img.naturalHeight
-      if (!iw || !ih) return
-      const s = Math.max(cw / iw, ch / ih)
-      const w = iw * s, h = ih * s
-      ctx.globalAlpha = alpha
-      ctx.drawImage(img, (cw - w) / 2, (ch - h) / 2, w, h)
-    }
-    const nearestLoaded = (i: number) => {
-      for (let d = 0; d < FRAME_COUNT; d++) {
-        if (i - d >= 0 && loaded[i - d]) return i - d
-        if (i + d < FRAME_COUNT && loaded[i + d]) return i + d
-      }
-      return -1
-    }
-
+    const el = playerRef.current
+    if (!el) return
+    const sv = new ScrollyVideo({
+      src: VIDEO_SRC,
+      scrollyVideoContainer: el,
+      trackScroll: false,
+      sticky: false,
+      full: false,
+      cover: true,
+      useWebCodecs: true,
+      transitionSpeed: 12,
+    })
+    /* Свой рендер-цикл: lerp-догон + прямая отрисовка кадров WebCodecs.
+       Их анимацию не используем — setTargetTimePercent не отменяет прошлые rAF
+       и при частых вызовах переходы дерутся между собой. */
     let raf = 0
     let current: number | null = null
-    let lastDrawn = -1
-    const tick = () => {
+    let lastFrame = -1
+    let lastSeek = 0
+    const tick = (now: number) => {
       raf = requestAnimationFrame(tick)
-      const target = scrollYProgress.get() * (FRAME_COUNT - 1)
+      const target = Math.min(0.999, Math.max(0, scrollYProgress.get()))
       if (current === null) current = target
-      current += (target - current) * 0.17
-      if (Math.abs(target - current) < 0.02) current = target
-      if (Math.abs(current - lastDrawn) < 0.015 && canvas.width) return
+      current += (target - current) * 0.16
+      if (Math.abs(target - current) < 0.0004) current = target
 
-      const base = Math.floor(current)
-      const frac = current - base
-      const a = nearestLoaded(base)
-      if (a < 0) return
-      drawCover(images[a], 1)
-      const b = base + 1
-      if (frac > 0.02 && b < FRAME_COUNT && loaded[b]) drawCover(images[b], frac)
-      ctx.globalAlpha = 1
-      lastDrawn = current
+      if (sv.frames.length && sv.frameRate) {
+        /* WebCodecs готов: рисуем кадр сами, 60fps */
+        const frame = Math.min(
+          sv.frames.length - 1,
+          Math.round(current * (sv.frames.length - 1)),
+        )
+        if (frame !== lastFrame) {
+          sv.currentTime = frame / sv.frameRate
+          sv.targetTime = sv.currentTime
+          sv.paintCanvasFrame(frame)
+          lastFrame = frame
+        }
+      } else if (now - lastSeek > 120) {
+        /* Кадры ещё декодируются (или Safari): редкие точные сики видео */
+        lastSeek = now
+        sv.setVideoPercentage(current, { jump: true })
+      }
     }
     raf = requestAnimationFrame(tick)
     return () => {
       cancelAnimationFrame(raf)
-      window.removeEventListener('resize', fit)
+      sv.destroy()
     }
   }, [scrollYProgress, reduced])
 
@@ -163,11 +144,11 @@ export function Hero() {
   return (
     <section ref={ref} aria-label="ЭКСПЕРТ — клей для паркета" className="relative h-[520vh]">
       <div className="sticky top-0 h-screen overflow-hidden bg-[#14100b]">
-        {/* Кадровая сцена */}
-        <canvas
-          ref={canvasRef}
+        {/* Видео-сцена (ScrollyVideo монтирует внутрь canvas/video) */}
+        <div
+          ref={playerRef}
           aria-hidden
-          className="absolute inset-0 h-full w-full"
+          className="absolute inset-0 [&_canvas]:h-full [&_canvas]:w-full [&_canvas]:object-cover [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
           style={{ backgroundImage: `url(${POSTER_SRC})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         />
 
