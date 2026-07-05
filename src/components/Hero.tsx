@@ -72,6 +72,7 @@ export function Hero() {
     if (reduced) return
     const el = playerRef.current
     if (!el) return
+    el.innerHTML = '' // StrictMode/HMR: destroy() библиотеки не убирает свой canvas из DOM
     const sv = new ScrollyVideo({
       src: VIDEO_SRC,
       scrollyVideoContainer: el,
@@ -86,23 +87,43 @@ export function Hero() {
        кадры рисуем напрямую. Их анимацию не используем — setTargetTimePercent
        не отменяет прошлые rAF и при частых вызовах переходы дерутся между собой. */
     let raf = 0
-    let lastFrame = -1
+    let lastX = -1
     let lastSeek = 0
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick)
       const current = Math.min(0.999, Math.max(0, progress.get()))
 
       if (sv.frames.length && sv.frameRate) {
-        /* WebCodecs готов: рисуем кадр сами, 60fps */
-        const frame = Math.min(
-          sv.frames.length - 1,
-          Math.round(current * (sv.frames.length - 1)),
-        )
-        if (frame !== lastFrame) {
-          sv.currentTime = frame / sv.frameRate
-          sv.targetTime = sv.currentTime
-          sv.paintCanvasFrame(frame)
-          lastFrame = frame
+        /* WebCodecs готов: рисуем сами. Межкадровый блендинг — на медленном
+           докате пружины движение остаётся непрерывным, без «слайд-шоу». */
+        if (lastX < 0) {
+          /* Библиотека создаёт canvas асинхронно — StrictMode-сирота из первого
+             mount мог вставиться после cleanup. Сносим всё чужое один раз. */
+          el.querySelectorAll('canvas,video').forEach((n) => {
+            if (n !== sv.canvas && n !== sv.video) n.remove()
+          })
+        }
+        const maxI = sv.frames.length - 1
+        const x = current * maxI
+        if (Math.abs(x - lastX) > 0.02) {
+          const a = Math.floor(x)
+          const b = Math.min(a + 1, maxI)
+          const f = x - a
+          const fa = sv.frames[a]
+          if (fa) {
+            const ctx = sv.context
+            ctx.globalAlpha = 1
+            ctx.drawImage(fa, 0, 0, fa.width, fa.height)
+            const fb = sv.frames[b]
+            if (b !== a && f > 0.04 && fb) {
+              ctx.globalAlpha = f
+              ctx.drawImage(fb, 0, 0, fb.width, fb.height)
+              ctx.globalAlpha = 1
+            }
+            sv.currentTime = x / sv.frameRate
+            sv.targetTime = sv.currentTime
+            lastX = x
+          }
         }
       } else if (now - lastSeek > 120) {
         /* Кадры ещё декодируются (или Safari): редкие точные сики видео */
@@ -114,6 +135,7 @@ export function Hero() {
     return () => {
       cancelAnimationFrame(raf)
       sv.destroy()
+      el.innerHTML = ''
     }
   }, [progress, reduced])
 
@@ -152,7 +174,7 @@ export function Hero() {
         <div
           ref={playerRef}
           aria-hidden
-          className="absolute inset-0 [&_canvas]:h-full [&_canvas]:w-full [&_canvas]:object-cover [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+          className="absolute inset-0 [&_canvas]:absolute [&_canvas]:inset-0 [&_canvas]:h-full [&_canvas]:w-full [&_canvas]:object-cover [&_video]:absolute [&_video]:inset-0 [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
           style={{ backgroundImage: `url(${POSTER_SRC})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         />
 
