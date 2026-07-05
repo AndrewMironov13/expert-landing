@@ -56,8 +56,16 @@ export function Hero() {
     target: ref,
     offset: ['start start', 'end end'],
   })
-  /* Спринг — только для текстовых оверлеев */
-  const progress = useSpring(scrollYProgress, { stiffness: 110, damping: 26, mass: 0.35 })
+  /* Единая пружина для видео и оверлеев — всё дышит синхронно.
+     Пресеты сравнимы вживую: ?spring=soft | mid | snappy */
+  const springPresets = {
+    soft: { stiffness: 32, damping: 24, mass: 0.7 }, // киношный дрейф (MirWeb)
+    mid: { stiffness: 60, damping: 22, mass: 0.5 }, // баланс отклика и плавности
+    snappy: { stiffness: 110, damping: 26, mass: 0.35 }, // максимум отклика
+  } as const
+  const springKey = (new URLSearchParams(window.location.search).get('spring') ??
+    'mid') as keyof typeof springPresets
+  const progress = useSpring(scrollYProgress, springPresets[springKey] ?? springPresets.mid)
 
   /* ScrollyVideo: WebCodecs-декодер рисует кадры 1080p на canvas, скраб без лагов */
   useEffect(() => {
@@ -74,19 +82,15 @@ export function Hero() {
       useWebCodecs: true,
       transitionSpeed: 12,
     })
-    /* Свой рендер-цикл: lerp-догон + прямая отрисовка кадров WebCodecs.
-       Их анимацию не используем — setTargetTimePercent не отменяет прошлые rAF
-       и при частых вызовах переходы дерутся между собой. */
+    /* Свой рендер-цикл: сглаживание задаёт общая пружина `progress`,
+       кадры рисуем напрямую. Их анимацию не используем — setTargetTimePercent
+       не отменяет прошлые rAF и при частых вызовах переходы дерутся между собой. */
     let raf = 0
-    let current: number | null = null
     let lastFrame = -1
     let lastSeek = 0
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick)
-      const target = Math.min(0.999, Math.max(0, scrollYProgress.get()))
-      if (current === null) current = target
-      current += (target - current) * 0.16
-      if (Math.abs(target - current) < 0.0004) current = target
+      const current = Math.min(0.999, Math.max(0, progress.get()))
 
       if (sv.frames.length && sv.frameRate) {
         /* WebCodecs готов: рисуем кадр сами, 60fps */
@@ -111,7 +115,7 @@ export function Hero() {
       cancelAnimationFrame(raf)
       sv.destroy()
     }
-  }, [scrollYProgress, reduced])
+  }, [progress, reduced])
 
   /* Интро поверх тёмного первого кадра: гаснет при первом же движении */
   const introOpacity = useTransform(progress, [0, 0.06], [1, 0])
