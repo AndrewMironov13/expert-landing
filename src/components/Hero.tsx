@@ -57,15 +57,9 @@ export function Hero() {
     offset: ['start start', 'end end'],
   })
   /* Единая пружина для видео и оверлеев — всё дышит синхронно.
-     Пресеты сравнимы вживую: ?spring=soft | mid | snappy */
-  const springPresets = {
-    soft: { stiffness: 32, damping: 24, mass: 0.7 }, // киношный дрейф (MirWeb)
-    mid: { stiffness: 60, damping: 22, mass: 0.5 }, // баланс отклика и плавности
-    snappy: { stiffness: 110, damping: 26, mass: 0.35 }, // максимум отклика
-  } as const
-  const springKey = (new URLSearchParams(window.location.search).get('spring') ??
-    'mid') as keyof typeof springPresets
-  const progress = useSpring(scrollYProgress, springPresets[springKey] ?? springPresets.mid)
+     «Кинематографичный дрейф»: мягкая тяжёлая пружина + межкадровый блендинг
+     в rAF-цикле (см. ниже) = плавный докат без ступенек. Дефолт — soft. */
+  const progress = useSpring(scrollYProgress, { stiffness: 32, damping: 24, mass: 0.7 })
 
   /* ScrollyVideo: WebCodecs-декодер рисует кадры 1080p на canvas, скраб без лагов */
   useEffect(() => {
