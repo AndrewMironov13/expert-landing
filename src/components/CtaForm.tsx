@@ -25,14 +25,16 @@ export function CtaForm() {
               Оставьте заявку — вышлем дилерский прайс, шкалу скидок и бесплатные
               образцы всех пяти формул. Менеджер завода ответит в течение рабочего дня.
             </p>
-            <div className="mt-8 space-y-2 font-mono text-sm text-[#cfc6b4]">
-              <p>
-                <a href={company.phoneHref} className="text-gold-300 hover:text-gold-200">
-                  {company.phone}
-                </a>
+            <div className="mt-8">
+              <p className="font-mono text-[0.6rem] uppercase tracking-[0.24em] text-gold-300/80">
+                Или позвоните напрямую
               </p>
-              <p>{company.name} · {company.inn}</p>
-              <p className="max-w-sm">{company.address}</p>
+              <a
+                href={company.phoneHref}
+                className="mt-2 block font-display text-3xl text-[#f6efe0] transition hover:text-gold-200"
+              >
+                {company.phone}
+              </a>
             </div>
           </div>
 

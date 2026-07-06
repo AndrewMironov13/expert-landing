@@ -212,7 +212,7 @@ export function Hero() {
           eyebrow="Вскрытие"
           className="left-[6vw] top-[18vh] md:left-[9vw] md:top-[24vh]"
         >
-          Пять формул. Один стандарт&nbsp;— профессиональный.
+          Клей, на котором держится репутация&nbsp;мастера
         </StageCaption>
         <StageCaption
           progress={progress}
@@ -220,7 +220,7 @@ export function Hero() {
           eyebrow="Нанесение"
           className="right-[6vw] top-[18vh] text-right md:right-[9vw] md:top-[22vh]"
         >
-          Тиксотропная паста без воды и&nbsp;растворителей. Шпатель B3–B15.
+          Наносится легко&nbsp;— держит намертво
         </StageCaption>
         <StageCaption
           progress={progress}
@@ -228,7 +228,7 @@ export function Hero() {
           eyebrow="Укладка"
           className="left-[6vw] top-[18vh] md:left-[9vw] md:top-[22vh]"
         >
-          Держит всё: от штучного паркета до массива и&nbsp;экзотики.
+          Держит всё: от штучного паркета до массива и&nbsp;экзотики
         </StageCaption>
 
         {/* Затемнение под финальный текст */}

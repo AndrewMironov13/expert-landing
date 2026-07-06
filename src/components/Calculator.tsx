@@ -110,8 +110,8 @@ export function Calculator() {
               <input
                 type="range"
                 min={10}
-                max={500}
-                step={5}
+                max={2000}
+                step={10}
                 value={area}
                 onChange={(e) => setArea(Number(e.target.value))}
                 className="w-full accent-[var(--color-gold-500)]"
@@ -119,7 +119,7 @@ export function Calculator() {
               />
               <div className="mt-1 flex justify-between font-mono text-[0.62rem] text-muted">
                 <span>10 м² — комната</span>
-                <span>500 м² — объект</span>
+                <span>2000 м² — крупный объект</span>
               </div>
             </div>
 

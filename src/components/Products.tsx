@@ -15,10 +15,10 @@ export function Products() {
     <section id="products" className="relative mx-auto max-w-6xl scroll-mt-24 px-5 py-24 md:py-32">
       <div className="mb-12 max-w-2xl">
         <p className="eyebrow mb-4">Линейка</p>
-        <h2 className="text-4xl md:text-5xl">Пять формул под любой объект</h2>
+        <h2 className="text-4xl md:text-5xl">Пять клеёв — любой заказ закрыт</h2>
         <p className="mt-5 text-lg text-muted">
-          Три силановых 1К и два полиуретановых 2К. Одна школа рецептуры, разная жёсткость шва —
-          дилер закрывает весь спрос укладчиков одной полкой.
+          От мягкого силанового 1К до жёсткого полиуретанового 2К. Какую бы доску и основание
+          ни принёс мастер — в линейке ЭКСПЕРТ уже есть решение под его объект.
         </p>
       </div>
 
@@ -70,7 +70,7 @@ export function Products() {
           <div>
             <p className="eyebrow mb-2">{kindLabel[active.kind]}</p>
             <h3 className="text-3xl md:text-4xl">{active.name}</h3>
-            <p className="mt-1 font-mono text-sm text-muted">{active.sku} · {active.tu}</p>
+            <p className="mt-1 font-mono text-sm text-muted">{active.sku}</p>
 
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <Stat label="Твердость" value={active.hardness} />
@@ -92,7 +92,7 @@ export function Products() {
             </ul>
 
             <div className="mt-6 rounded-xl border border-gold-200 bg-gold-50/60 p-4">
-              <p className="font-mono text-[0.62rem] uppercase tracking-[0.22em] text-gold-600">Кому продавать</p>
+              <p className="font-mono text-[0.62rem] uppercase tracking-[0.22em] text-gold-600">Где использовать</p>
               <p className="mt-1.5 text-sm text-ink-soft">{active.bestFor}</p>
             </div>
 

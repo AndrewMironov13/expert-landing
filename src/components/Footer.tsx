@@ -7,10 +7,6 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-8 px-5">
         <div>
           <Logo />
-          <p className="mt-4 max-w-xs text-sm text-muted">
-            Профессиональная линейка паркетных клеёв российской научно-производственной
-            компании «Каспол», г. Дзержинск.
-          </p>
         </div>
         <div className="text-sm text-muted">
           <p className="mb-2 font-mono text-[0.62rem] uppercase tracking-[0.22em] text-gold-600">Контакты</p>
