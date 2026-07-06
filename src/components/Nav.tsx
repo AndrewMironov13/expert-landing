@@ -48,7 +48,7 @@ export function Nav() {
             {company.phone}
           </a>
           <a
-            href="#dealer"
+            href="#cta"
             className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
               onDark ? 'bg-gold-400 text-ink hover:bg-gold-300' : 'bg-ink text-paper hover:bg-ink-soft'
             }`}
@@ -82,7 +82,7 @@ export function Nav() {
               {l.label}
             </a>
           ))}
-          <a href="#dealer" onClick={() => setOpen(false)} className="mt-3 block rounded-full bg-ink px-5 py-3 text-center font-semibold text-paper">
+          <a href="#cta" onClick={() => setOpen(false)} className="mt-3 block rounded-full bg-ink px-5 py-3 text-center font-semibold text-paper">
             Стать дилером
           </a>
         </nav>

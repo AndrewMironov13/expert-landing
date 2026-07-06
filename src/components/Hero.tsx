@@ -153,7 +153,7 @@ export function Hero() {
             Клей для паркета. Пять формул для дилеров и дистрибьюторов.
           </p>
           <img src={POSTER_SRC} alt="Ведро клея ЭКСПЕРТ" className="mx-auto mt-10 w-full max-w-xl rounded-2xl" />
-          <a href="#dealer" className="mt-10 inline-block rounded-full bg-ink px-8 py-4 font-semibold text-paper">
+          <a href="#cta" className="mt-10 inline-block rounded-full bg-ink px-8 py-4 font-semibold text-paper">
             Стать дилером
           </a>
         </div>
@@ -252,7 +252,7 @@ export function Hero() {
           </p>
           <div className="pointer-events-auto mt-9 flex flex-wrap items-center justify-center gap-4">
             <a
-              href="#dealer"
+              href="#cta"
               className="rounded-full bg-gold-400 px-9 py-4 font-semibold text-ink shadow-[0_18px_40px_-16px_rgba(0,0,0,0.7)] transition hover:bg-gold-300"
             >
               Стать дилером

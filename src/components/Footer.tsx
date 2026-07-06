@@ -4,7 +4,7 @@ import { company } from '@/lib/content'
 export function Footer() {
   return (
     <footer className="border-t border-line bg-paper-2/60 py-12">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-8 px-5">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-8 px-5">
         <div>
           <Logo />
         </div>

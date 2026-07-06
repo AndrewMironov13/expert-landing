@@ -157,7 +157,7 @@ export function Calculator() {
               </p>
             </div>
             <a
-              href="#dealer"
+              href="#cta"
               className="mt-8 rounded-full bg-gold-400 px-7 py-3.5 text-center font-semibold text-ink transition hover:bg-gold-300"
             >
               Запросить дилерский прайс

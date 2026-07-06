@@ -97,7 +97,7 @@ export function Products() {
             </div>
 
             <div className="mt-7 flex flex-wrap gap-3">
-              <a href="#dealer" className="rounded-full bg-ink px-7 py-3 text-sm font-semibold text-paper transition hover:bg-ink-soft">
+              <a href="#cta" className="rounded-full bg-ink px-7 py-3 text-sm font-semibold text-paper transition hover:bg-ink-soft">
                 Запросить прайс
               </a>
               <a href="#calculator" className="rounded-full border border-gold-400 px-7 py-3 text-sm font-semibold text-ink transition hover:bg-gold-50">
