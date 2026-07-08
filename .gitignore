@@ -1,7 +1,0 @@
-node_modules/
-dist/
-.DS_Store
-*.local
-
-# workflow нельзя пушить без workflow-scope у токена
-.github/
