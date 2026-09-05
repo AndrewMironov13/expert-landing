@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useScroll, useTransform, type MotionValue } from 'framer-motion'
-import { ScrollVideo } from './ScrollVideo'
+import decodeVideo from 'scrolly-video/dist/videoDecoder.js'
 import { asset } from '@/lib/utils'
-import { scrubMode } from '@/lib/scrub'
+import { HERO_VIDEO, scrubMode } from '@/lib/scrub'
 
 /* ----------------------------------------------------------------------------
-   Скролл-кино «ЭКСПЕРТ»: ролик Higgsfield 1080p, нативный <video> по кадрам.
-   Кадр — ЧИСТАЯ функция от прокрутки, без пружины: любое сглаживание отстаёт
-   от руки, и это читалось как «лаги» (замер: догон 3,5 с при честных 60 FPS).
-   Декодированные кадры держит браузер, а не мы: прежний кеш из 361 ImageBitmap
-   стоил 3,1 ГБ и загонял M1/8 ГБ в своп (замер: 47 тысяч выгрузок на диск
-   против нуля), а первый кадр на 4G ждали 15 секунд вместо 1,6.
-   Непрерывность на медленном ходу даёт кроссфейд внутри ScrollVideo.
+   Скролл-кино «ЭКСПЕРТ»: ролик Higgsfield 1080p, WebCodecs декодирует кадры в
+   ImageBitmap, рисуем их на свой canvas. Кадр — ЧИСТАЯ функция от прокрутки,
+   без пружины: любое сглаживание отстаёт от руки, и это читалось как «лаги»
+   (замер: догон 3,5 с при честных 60 FPS). Кино даёт межкадровый блендинг на
+   медленном ходу, на быстрой прокрутке он не виден и не рисуется.
+   Пока ролик декодируется, показываем ближайший уже готовый кадр — никаких
+   сиков <video>, из-за которых первое открытие подтормаживало.
 ---------------------------------------------------------------------------- */
 
+const VIDEO_SRC = asset('/assets/hero/hero.mp4')
 const POSTER_SRC = asset('/assets/hero/poster.jpg')
 
 /* Подписи кадров поверх сцены */
@@ -47,21 +48,8 @@ function StageCaption({
 
 export function Hero() {
   const ref = useRef<HTMLElement>(null)
-  const [mode, setMode] = useState(scrubMode)
-  useEffect(() => {
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const desktop = window.matchMedia('(pointer: fine) and (hover: hover) and (min-width: 640px)')
-    const connection = (navigator as Navigator & { connection?: EventTarget }).connection
-    const update = () => setMode(scrubMode())
-    reduced.addEventListener('change', update)
-    desktop.addEventListener('change', update)
-    connection?.addEventListener('change', update)
-    return () => {
-      reduced.removeEventListener('change', update)
-      desktop.removeEventListener('change', update)
-      connection?.removeEventListener('change', update)
-    }
-  }, [])
+  const playerRef = useRef<HTMLDivElement>(null)
+  const [mode] = useState(scrubMode)
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start start', 'end end'],
@@ -72,6 +60,98 @@ export function Hero() {
      нативный ViewTimeline в композитор, чей отсчёт не совпадает с JS-прогрессом
      (интро не гасло, opacity ≈ progress). Обёртка-функция снимает эту пометку. */
   const progress = useTransform(scrollYProgress, (v) => v)
+
+  useEffect(() => {
+    if (mode === 'off') return
+    const el = playerRef.current
+    if (!el) return
+    el.innerHTML = '' // StrictMode/HMR: не оставлять canvas от прошлого монтирования
+    const canvas = document.createElement('canvas')
+    el.appendChild(canvas)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const keepEvery = mode === 'half' ? 2 : 1
+    const frames: ImageBitmap[] = []
+    let expected = Math.ceil(HERO_VIDEO.frames / keepEvery)
+    let decoded = 0
+    let disposed = false
+    let raf = 0
+    let lastX = -1
+
+    const draw = () => {
+      raf = 0
+      const avail = frames.length - 1
+      if (avail < 0) return
+      const p = Math.min(0.9999, Math.max(0, progress.get()))
+      const x = p * (expected - 1)
+      if (Math.abs(x - lastX) < 0.02) return
+      /* Пока декодируется — ближайший готовый кадр (они приходят по порядку) */
+      const a = Math.min(Math.floor(x), avail)
+      const b = Math.min(a + 1, avail)
+      const f = x - Math.floor(x)
+      const fa = frames[a]
+      if (canvas.width !== fa.width || canvas.height !== fa.height) {
+        canvas.width = fa.width
+        canvas.height = fa.height
+      }
+      ctx.globalAlpha = 1
+      ctx.drawImage(fa, 0, 0, fa.width, fa.height)
+      /* Блендинг — второй полноэкранный drawImage, платим за него только на
+         медленном ходу (< 0,7 кадра за rAF); на быстрой прокрутке его не видно */
+      const slow = lastX >= 0 && Math.abs(x - lastX) < 0.7
+      if (slow && b !== a && f > 0.04) {
+        const fb = frames[b]
+        ctx.globalAlpha = f
+        ctx.drawImage(fb, 0, 0, fb.width, fb.height)
+        ctx.globalAlpha = 1
+      }
+      lastX = x
+    }
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(draw)
+    }
+
+    const unsubscribe = progress.on('change', schedule)
+    decodeVideo(VIDEO_SRC, (bitmap) => {
+      if (disposed) {
+        bitmap.close()
+        return
+      }
+      decoded += 1
+      if (keepEvery > 1 && (decoded - 1) % keepEvery !== 0) {
+        bitmap.close()
+        return
+      }
+      frames.push(bitmap)
+      /* Первый кадр — сразу, дальше подрисовываем по мере поступления */
+      if (frames.length === 1 || frames.length % 12 === 0) {
+        el.dataset.frames = String(frames.length) // маркер прогресса для тестов
+        lastX = -1
+        schedule()
+      }
+    })
+      .then(() => {
+        if (disposed) return
+        expected = frames.length || expected
+        el.dataset.frames = String(frames.length)
+        el.dataset.decoded = '1'
+        lastX = -1
+        schedule()
+      })
+      .catch(() => {
+        /* Нет WebCodecs или ролик не прочитался — остаётся постер */
+      })
+
+    return () => {
+      disposed = true
+      unsubscribe()
+      cancelAnimationFrame(raf)
+      frames.forEach((f) => f.close())
+      frames.length = 0
+      el.innerHTML = ''
+    }
+  }, [progress, mode])
 
   /* Интро поверх тёмного первого кадра: гаснет при первом же движении */
   const introOpacity = useTransform(progress, [0, 0.06], [1, 0])
@@ -84,7 +164,7 @@ export function Hero() {
   const scrimOpacity = useTransform(progress, [0.86, 0.96], [0, 0.55])
 
   if (mode === 'off') {
-    /* Телефоны, reduced-motion, экономия трафика: статичный постер */
+    /* Телефоны, слабые машины, reduced-motion: постер вместо 3 ГБ кадров */
     return (
       <section className="relative flex min-h-screen items-center justify-center px-6 pt-24">
         <div className="text-center">
@@ -105,8 +185,13 @@ export function Hero() {
   return (
     <section ref={ref} aria-label="ЭКСПЕРТ — линейка паркетной химии" className="relative h-[520vh]">
       <div className="sticky top-0 h-screen overflow-hidden bg-[#14100b]">
-        {/* Видео-сцена: нативный плеер под теми же оверлеями, общий progress */}
-        <ScrollVideo progress={progress} enabled />
+        {/* Видео-сцена: canvas с декодированными кадрами поверх постера */}
+        <div
+          ref={playerRef}
+          aria-hidden
+          className="absolute inset-0 [&_canvas]:absolute [&_canvas]:inset-0 [&_canvas]:h-full [&_canvas]:w-full [&_canvas]:object-cover"
+          style={{ backgroundImage: `url(${POSTER_SRC})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        />
 
         {/* Интро: светлый заголовок в воздухе тёмной студии, над ведром */}
         <motion.div
