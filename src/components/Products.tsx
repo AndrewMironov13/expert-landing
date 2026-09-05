@@ -12,13 +12,13 @@ export function Products() {
   const active = products.find((p) => p.id === activeId) ?? products[0]
 
   return (
-    <section id="products" className="relative mx-auto max-w-6xl scroll-mt-24 px-5 py-24 md:py-32">
-      <div className="mb-12 max-w-2xl">
+    <section id="products" className="relative mx-auto max-w-6xl scroll-mt-24 px-5 py-20 md:py-28">
+      <div className="mb-10 max-w-2xl">
         <p className="eyebrow mb-4">Линейка</p>
-        <h2 className="text-4xl md:text-5xl">Пять клеёв — любой заказ закрыт</h2>
+        <h2 className="text-4xl md:text-5xl">Клей под любую задачу</h2>
         <p className="mt-5 text-lg text-muted">
-          От мягкого силанового 1К до жёсткого полиуретанового 2К. Какую бы доску и основание
-          ни принёс мастер — в линейке ЭКСПЕРТ уже есть решение под его объект.
+          От эластичного силанового до жёсткого полиуретанового: какая бы задача ни стояла,
+          в линейке ЭКСПЕРТ уже есть решение
         </p>
       </div>
 

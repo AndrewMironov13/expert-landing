@@ -32,15 +32,11 @@ export function Calculator() {
   }, [area, spreader, reserve, product])
 
   return (
-    <section id="calculator" className="relative scroll-mt-24 py-24 md:py-32">
+    <section id="calculator" className="relative scroll-mt-24 py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-5">
-        <div className="mb-12 max-w-2xl">
+        <div className="mb-10 max-w-2xl">
           <p className="eyebrow mb-4">Калькулятор расхода</p>
           <h2 className="text-4xl md:text-5xl">Сколько клея нужно на объект</h2>
-          <p className="mt-5 text-lg text-muted">
-            Нормы расхода — из технических условий линейки. Двигайте ползунок площади —
-            расчёт обновляется мгновенно.
-          </p>
         </div>
 
         <div className="card-label grid gap-10 rounded-3xl p-6 md:grid-cols-[1.2fr_1fr] md:p-10">
@@ -160,14 +156,14 @@ export function Calculator() {
               href="#cta"
               className="mt-8 rounded-full bg-gold-400 px-7 py-3.5 text-center font-semibold text-ink transition hover:bg-gold-300"
             >
-              Запросить дилерский прайс
+              Запросить прайс
             </a>
           </div>
         </div>
 
         <p className="mt-4 text-xs text-muted">
-          Расчёт ориентировочный: фактический расход зависит от ровности основания и техники
-          нанесения. Точную потребность подтвердит технолог CASPOL.
+          Нормы расхода — из технических условий линейки, расчёт ориентировочный: фактический
+          расход зависит от ровности основания и техники нанесения
         </p>
       </div>
     </section>

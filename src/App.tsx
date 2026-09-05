@@ -5,7 +5,6 @@ import { Products } from './components/Products'
 import { Specs } from './components/Specs'
 import { Calculator } from './components/Calculator'
 import { Dealer } from './components/Dealer'
-import { Faq } from './components/Faq'
 import { CtaForm } from './components/CtaForm'
 import { Footer } from './components/Footer'
 
@@ -20,7 +19,6 @@ export default function App() {
         <Specs />
         <Calculator />
         <Dealer />
-        <Faq />
         <CtaForm />
       </main>
       <Footer />

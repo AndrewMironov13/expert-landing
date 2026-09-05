@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Logo } from './Logo'
 import { company } from '@/lib/content'
+import { Messengers } from './Messengers'
 
 const links = [
   { href: '#products', label: 'Линейка' },
-  { href: '#specs', label: 'Данные' },
+  { href: '#specs', label: 'Сравнение' },
   { href: '#calculator', label: 'Калькулятор' },
-  { href: '#dealer', label: 'Дилерам' },
-  { href: '#faq', label: 'FAQ' },
+  { href: '#dealer', label: 'Партнёрам' },
+  { href: '#contacts', label: 'Контакты' },
 ]
 
 export function Nav() {
@@ -47,13 +48,17 @@ export function Nav() {
           >
             {company.phone}
           </a>
+          {/* Обёртка, а не className: у компонента свой inline-flex, и hidden с ним спорит */}
+          <span className="hidden lg:inline-flex">
+            <Messengers tone={onDark ? 'dark' : 'light'} />
+          </span>
           <a
             href="#cta"
             className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
               onDark ? 'bg-gold-400 text-ink hover:bg-gold-300' : 'bg-ink text-paper hover:bg-ink-soft'
             }`}
           >
-            Стать дилером
+            Стать партнёром
           </a>
         </div>
         <button
@@ -71,20 +76,30 @@ export function Nav() {
         </button>
       </div>
       {open && (
-        <nav className="glass mx-4 mt-3 rounded-2xl p-5 md:hidden" aria-label="Мобильная навигация">
-          {links.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              onClick={() => setOpen(false)}
-              className="block border-b border-line-soft py-3 font-medium text-ink last:border-0"
-            >
-              {l.label}
-            </a>
-          ))}
-          <a href="#cta" onClick={() => setOpen(false)} className="mt-3 block rounded-full bg-ink px-5 py-3 text-center font-semibold text-paper">
-            Стать дилером
+        /* Компактное меню: четыре ссылки плиткой, кнопка, одна строка контактов.
+           «Сравнение» здесь не нужно — оно идёт сразу за каталогом. */
+        <nav className="glass mx-4 mt-3 rounded-2xl p-4 md:hidden" aria-label="Мобильная навигация">
+          <div className="grid grid-cols-2 gap-2">
+            {links
+              .filter((l) => l.href !== '#specs')
+              .map((l) => (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl border border-line-soft bg-white/60 px-4 py-3 text-sm font-medium text-ink"
+                >
+                  {l.label}
+                </a>
+              ))}
+          </div>
+          <a href="#cta" onClick={() => setOpen(false)} className="mt-3 block rounded-full bg-ink px-5 py-3 text-center text-sm font-semibold text-paper">
+            Стать партнёром
           </a>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <a href={company.phoneHref} className="font-mono text-sm text-ink-soft">{company.phone}</a>
+            <Messengers tone="light" />
+          </div>
         </nav>
       )}
     </header>
