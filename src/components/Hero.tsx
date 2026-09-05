@@ -1,22 +1,19 @@
-import { useEffect, useRef } from 'react'
-import {
-  motion,
-  useScroll,
-  useTransform,
-  useSpring,
-  useReducedMotion,
-  type MotionValue,
-} from 'framer-motion'
-import ScrollyVideo from 'scrolly-video/dist/ScrollyVideo.js'
+import { useEffect, useRef, useState } from 'react'
+import { motion, useScroll, useTransform, type MotionValue } from 'framer-motion'
+import { ScrollVideo } from './ScrollVideo'
 import { asset } from '@/lib/utils'
+import { scrubMode } from '@/lib/scrub'
 
 /* ----------------------------------------------------------------------------
-   Скролл-кино «ЭКСПЕРТ»: ролик Higgsfield 1080p, скраб через ScrollyVideo —
-   WebCodecs декодирует кадры заранее и рисует на canvas в полном качестве,
-   перемотка сглаживается встроенной анимацией. Fallback для Safari — video.
+   Скролл-кино «ЭКСПЕРТ»: ролик Higgsfield 1080p, нативный <video> по кадрам.
+   Кадр — ЧИСТАЯ функция от прокрутки, без пружины: любое сглаживание отстаёт
+   от руки, и это читалось как «лаги» (замер: догон 3,5 с при честных 60 FPS).
+   Декодированные кадры держит браузер, а не мы: прежний кеш из 361 ImageBitmap
+   стоил 3,1 ГБ и загонял M1/8 ГБ в своп (замер: 47 тысяч выгрузок на диск
+   против нуля), а первый кадр на 4G ждали 15 секунд вместо 1,6.
+   Непрерывность на медленном ходу даёт кроссфейд внутри ScrollVideo.
 ---------------------------------------------------------------------------- */
 
-const VIDEO_SRC = asset('/assets/hero/hero.mp4')
 const POSTER_SRC = asset('/assets/hero/poster.jpg')
 
 /* Подписи кадров поверх сцены */
@@ -29,7 +26,7 @@ function StageCaption({
 }: {
   progress: MotionValue<number>
   at: [number, number, number, number]
-  eyebrow: string
+  eyebrow?: string
   children: React.ReactNode
   className?: string
 }) {
@@ -40,7 +37,7 @@ function StageCaption({
       style={{ opacity, y: ty }}
       className={`pointer-events-none absolute z-30 max-w-[22rem] ${className}`}
     >
-      <p className="eyebrow mb-3 !text-gold-300">{eyebrow}</p>
+      {eyebrow && <p className="eyebrow mb-3 !text-gold-300">{eyebrow}</p>}
       <p className="font-display text-2xl leading-snug text-[#f6efe0] drop-shadow-[0_2px_18px_rgba(0,0,0,0.75)] md:text-3xl">
         {children}
       </p>
@@ -50,88 +47,31 @@ function StageCaption({
 
 export function Hero() {
   const ref = useRef<HTMLElement>(null)
-  const playerRef = useRef<HTMLDivElement>(null)
-  const reduced = useReducedMotion()
+  const [mode, setMode] = useState(scrubMode)
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const desktop = window.matchMedia('(pointer: fine) and (hover: hover) and (min-width: 640px)')
+    const connection = (navigator as Navigator & { connection?: EventTarget }).connection
+    const update = () => setMode(scrubMode())
+    reduced.addEventListener('change', update)
+    desktop.addEventListener('change', update)
+    connection?.addEventListener('change', update)
+    return () => {
+      reduced.removeEventListener('change', update)
+      desktop.removeEventListener('change', update)
+      connection?.removeEventListener('change', update)
+    }
+  }, [])
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start start', 'end end'],
   })
-  /* Единая пружина для видео и оверлеев — всё дышит синхронно.
-     «Кинематографичный дрейф»: мягкая тяжёлая пружина + межкадровый блендинг
-     в rAF-цикле (см. ниже) = плавный докат без ступенек. Дефолт — soft. */
-  const progress = useSpring(scrollYProgress, { stiffness: 32, damping: 24, mass: 0.7 })
-
-  /* ScrollyVideo: WebCodecs-декодер рисует кадры 1080p на canvas, скраб без лагов */
-  useEffect(() => {
-    if (reduced) return
-    const el = playerRef.current
-    if (!el) return
-    el.innerHTML = '' // StrictMode/HMR: destroy() библиотеки не убирает свой canvas из DOM
-    const sv = new ScrollyVideo({
-      src: VIDEO_SRC,
-      scrollyVideoContainer: el,
-      trackScroll: false,
-      sticky: false,
-      full: false,
-      cover: true,
-      useWebCodecs: true,
-      transitionSpeed: 12,
-    })
-    /* Свой рендер-цикл: сглаживание задаёт общая пружина `progress`,
-       кадры рисуем напрямую. Их анимацию не используем — setTargetTimePercent
-       не отменяет прошлые rAF и при частых вызовах переходы дерутся между собой. */
-    let raf = 0
-    let lastX = -1
-    let lastSeek = 0
-    const tick = (now: number) => {
-      raf = requestAnimationFrame(tick)
-      const current = Math.min(0.999, Math.max(0, progress.get()))
-
-      if (sv.frames.length && sv.frameRate) {
-        /* WebCodecs готов: рисуем сами. Межкадровый блендинг — на медленном
-           докате пружины движение остаётся непрерывным, без «слайд-шоу». */
-        if (lastX < 0) {
-          /* Библиотека создаёт canvas асинхронно — StrictMode-сирота из первого
-             mount мог вставиться после cleanup. Сносим всё чужое один раз. */
-          el.querySelectorAll('canvas,video').forEach((n) => {
-            if (n !== sv.canvas && n !== sv.video) n.remove()
-          })
-        }
-        const maxI = sv.frames.length - 1
-        const x = current * maxI
-        if (Math.abs(x - lastX) > 0.02) {
-          const a = Math.floor(x)
-          const b = Math.min(a + 1, maxI)
-          const f = x - a
-          const fa = sv.frames[a]
-          if (fa) {
-            const ctx = sv.context
-            ctx.globalAlpha = 1
-            ctx.drawImage(fa, 0, 0, fa.width, fa.height)
-            const fb = sv.frames[b]
-            if (b !== a && f > 0.04 && fb) {
-              ctx.globalAlpha = f
-              ctx.drawImage(fb, 0, 0, fb.width, fb.height)
-              ctx.globalAlpha = 1
-            }
-            sv.currentTime = x / sv.frameRate
-            sv.targetTime = sv.currentTime
-            lastX = x
-          }
-        }
-      } else if (now - lastSeek > 120) {
-        /* Кадры ещё декодируются (или Safari): редкие точные сики видео */
-        lastSeek = now
-        sv.setVideoPercentage(current, { jump: true })
-      }
-    }
-    raf = requestAnimationFrame(tick)
-    return () => {
-      cancelAnimationFrame(raf)
-      sv.destroy()
-      el.innerHTML = ''
-    }
-  }, [progress, reduced])
+  /* Одна величина кормит и видео, и оверлеи — без сглаживания.
+     ЛОВУШКА framer-motion 12: scrollYProgress от useScroll({ target }) помечен как
+     `accelerate`, и useTransform с массивами диапазонов уводит opacity/transform на
+     нативный ViewTimeline в композитор, чей отсчёт не совпадает с JS-прогрессом
+     (интро не гасло, opacity ≈ progress). Обёртка-функция снимает эту пометку. */
+  const progress = useTransform(scrollYProgress, (v) => v)
 
   /* Интро поверх тёмного первого кадра: гаснет при первом же движении */
   const introOpacity = useTransform(progress, [0, 0.06], [1, 0])
@@ -143,18 +83,19 @@ export function Hero() {
   const finalY = useTransform(progress, [0.88, 0.96], [40, 0])
   const scrimOpacity = useTransform(progress, [0.86, 0.96], [0, 0.55])
 
-  if (reduced) {
+  if (mode === 'off') {
+    /* Телефоны, reduced-motion, экономия трафика: статичный постер */
     return (
       <section className="relative flex min-h-screen items-center justify-center px-6 pt-24">
         <div className="text-center">
-          <p className="eyebrow mb-4">Линейка CASPOL для профессионалов</p>
+          <p className="eyebrow mb-4">Линейка паркетной химии</p>
           <h1 className="label-caps text-5xl md:text-7xl">Эксперт</h1>
           <p className="mx-auto mt-6 max-w-xl text-lg text-muted">
-            Клей для паркета. Пять формул для дилеров и дистрибьюторов.
+            Пять формул клея для паркета: 1К силановые и 2К полиуретановые
           </p>
           <img src={POSTER_SRC} alt="Ведро клея ЭКСПЕРТ" className="mx-auto mt-10 w-full max-w-xl rounded-2xl" />
           <a href="#cta" className="mt-10 inline-block rounded-full bg-ink px-8 py-4 font-semibold text-paper">
-            Стать дилером
+            Стать партнёром
           </a>
         </div>
       </section>
@@ -162,28 +103,22 @@ export function Hero() {
   }
 
   return (
-    <section ref={ref} aria-label="ЭКСПЕРТ — клей для паркета" className="relative h-[520vh]">
+    <section ref={ref} aria-label="ЭКСПЕРТ — линейка паркетной химии" className="relative h-[520vh]">
       <div className="sticky top-0 h-screen overflow-hidden bg-[#14100b]">
-        {/* Видео-сцена (ScrollyVideo монтирует внутрь canvas/video) */}
-        <div
-          ref={playerRef}
-          aria-hidden
-          className="absolute inset-0 [&_canvas]:absolute [&_canvas]:inset-0 [&_canvas]:h-full [&_canvas]:w-full [&_canvas]:object-cover [&_video]:absolute [&_video]:inset-0 [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
-          style={{ backgroundImage: `url(${POSTER_SRC})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-        />
+        {/* Видео-сцена: нативный плеер под теми же оверлеями, общий progress */}
+        <ScrollVideo progress={progress} enabled />
 
         {/* Интро: светлый заголовок в воздухе тёмной студии, над ведром */}
         <motion.div
           style={{ opacity: introOpacity, y: introY }}
           className="absolute inset-x-0 top-[12vh] z-30 px-6 text-center md:top-[13vh]"
         >
-          <p className="eyebrow mb-3 !text-gold-300">Каспол · Дзержинск · линейка для профессионалов</p>
           <h1 className="label-caps text-[clamp(2.6rem,7vw,4.8rem)] leading-none text-[#f6efe0] drop-shadow-[0_2px_24px_rgba(0,0,0,0.55)]">
             Эксперт
           </h1>
           <div className="mx-auto mt-4 flex max-w-md items-center gap-4">
             <div className="hairline-gold flex-1" />
-            <p className="label-caps text-sm text-gold-100 md:text-base">Клей для паркета</p>
+            <p className="label-caps text-sm text-gold-100 md:text-base">Линейка паркетной химии</p>
             <div className="hairline-gold flex-1" />
           </div>
         </motion.div>
@@ -209,7 +144,6 @@ export function Hero() {
         <StageCaption
           progress={progress}
           at={[0.22, 0.28, 0.38, 0.44]}
-          eyebrow="Вскрытие"
           className="left-[6vw] top-[18vh] md:left-[9vw] md:top-[24vh]"
         >
           Клей, на котором держится репутация&nbsp;мастера
@@ -217,18 +151,16 @@ export function Hero() {
         <StageCaption
           progress={progress}
           at={[0.48, 0.54, 0.62, 0.68]}
-          eyebrow="Нанесение"
           className="right-[6vw] top-[18vh] text-right md:right-[9vw] md:top-[22vh]"
         >
-          Наносится легко&nbsp;— держит намертво
+          Наносится легко
         </StageCaption>
         <StageCaption
           progress={progress}
           at={[0.72, 0.78, 0.84, 0.88]}
-          eyebrow="Укладка"
           className="left-[6vw] top-[18vh] md:left-[9vw] md:top-[22vh]"
         >
-          Держит всё: от штучного паркета до массива и&nbsp;экзотики
+          Подходит для большинства видов&nbsp;паркета
         </StageCaption>
 
         {/* Затемнение под финальный текст */}
@@ -244,18 +176,17 @@ export function Hero() {
           className="absolute inset-x-0 top-[26vh] z-30 px-6 text-center"
         >
           <h2 className="mx-auto max-w-3xl text-4xl text-[#f6efe0] drop-shadow-[0_2px_20px_rgba(0,0,0,0.6)] md:text-6xl">
-            Продавайте клей, которому доверяют укладчики
+            Покупайте клей, которому доверяют укладчики
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-lg text-[#e8e0cf] drop-shadow-[0_1px_12px_rgba(0,0,0,0.6)]">
-            Закрытая линейка для дилеров и дистрибьюторов. Производство — Дзержинск,
-            отгрузка за 1–2 дня.
+            Производство — Дзержинск. В наличии у дилеров
           </p>
           <div className="pointer-events-auto mt-9 flex flex-wrap items-center justify-center gap-4">
             <a
               href="#cta"
               className="rounded-full bg-gold-400 px-9 py-4 font-semibold text-ink shadow-[0_18px_40px_-16px_rgba(0,0,0,0.7)] transition hover:bg-gold-300"
             >
-              Стать дилером
+              Стать партнёром
             </a>
             <a
               href="#products"
