@@ -3,23 +3,91 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/expert-landing/favicon.svg" />
+    <!-- Safari и старые браузеры SVG-иконку не берут, iOS для «Домой» — только PNG -->
+    <link rel="icon" href="/expert-landing/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/expert-landing/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- iOS превращал ИНН и прочие цифры в ссылки-звонки; явные tel: работают и так -->
+    <meta name="format-detection" content="telephone=no" />
     <meta
       name="description"
       content="ЭКСПЕРТ — профессиональные клеи для паркета: пять формул от эластичного до жёсткого и полиуретановый грунт-праймер. Станьте дилером ЭКСПЕРТ в своём регионе."
     />
     <meta name="theme-color" content="#16130f" />
+    <!-- Постер hero ставится фоном только после монтирования React — без preload
+         на медленной сети 1–2 с пустой тёмной сцены. Условие — как у vertical в Hero -->
+    <link
+      rel="preload"
+      as="image"
+      href="/expert-landing/assets/hero/poster-m.jpg"
+      media="(orientation: portrait) and (pointer: coarse)"
+      fetchpriority="high"
+    />
+    <link
+      rel="preload"
+      as="image"
+      href="/expert-landing/assets/hero/poster.jpg"
+      media="not all and (orientation: portrait) and (pointer: coarse)"
+      fetchpriority="high"
+    />
+    <!-- Превью ссылки в мессенджерах: финальный кадр с паркетом, не постер (на нём этикетка).
+         URL абсолютный — после переезда на поддомен caspol.ru поменять здесь и в og:url -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ЭКСПЕРТ" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:url" content="https://andrewmironov13.github.io/expert-landing/" />
     <meta property="og:title" content="ЭКСПЕРТ — профессиональные клеи для паркета" />
     <meta
       property="og:description"
-      content="Пять формул клея для паркета — от эластичного до жёсткого. Экологичный. Надежный. Профессиональный. Станьте дилером ЭКСПЕРТ в своём регионе."
+      content="Пять формул клея для паркета — от эластичного до жёсткого. Экологичный. Надёжный. Профессиональный. Станьте дилером ЭКСПЕРТ в своём регионе."
     />
-    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://andrewmironov13.github.io/expert-landing/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Паркет ёлочкой на бетонном основании" />
+    <meta name="twitter:card" content="summary_large_image" />
     <title>ЭКСПЕРТ — профессиональные клеи для паркета</title>
-    <script type="module" crossorigin src="/expert-landing/assets/index-BpE2Rei2.js"></script>
-    <link rel="stylesheet" crossorigin href="/expert-landing/assets/index-JLkq-W3V.css">
+    <!-- Реквизиты — как в подвале и в согласии на обработку ПД (src/lib/content.ts → company) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "ООО «Каспол»",
+        "legalName": "ООО «Каспол-Полиуретановые системы»",
+        "brand": { "@type": "Brand", "name": "ЭКСПЕРТ" },
+        "url": "https://caspol.ru",
+        "telephone": "+7 950 347-01-96",
+        "email": "info@caspol.ru",
+        "taxID": "5249168096",
+        "address": {
+          "@type": "PostalAddress",
+          "postalCode": "606002",
+          "addressCountry": "RU",
+          "addressRegion": "Нижегородская область",
+          "addressLocality": "Дзержинск",
+          "streetAddress": "ул. Красноармейская, д. 15, литер А, офис 22"
+        }
+      }
+    </script>
+    <script type="module" crossorigin src="/expert-landing/assets/index-4oTcDbFy.js"></script>
+    <link rel="stylesheet" crossorigin href="/expert-landing/assets/index-C6DjLgxK.css">
   </head>
   <body>
     <div id="root"></div>
+    <!-- Весь текст рисует React: без JS и для роботов без рендера — хотя бы суть и контакты -->
+    <noscript>
+      <div style="max-width: 40rem; margin: 0 auto; padding: 3rem 1.25rem; font: 16px/1.55 system-ui, sans-serif; color: #16130f">
+        <h1 style="margin: 0 0 0.75rem; font-size: 1.75rem">ЭКСПЕРТ — профессиональные клеи для паркета</h1>
+        <p style="margin: 0 0 1rem">
+          Пять формул клея для паркета — от эластичного до жёсткого — и полиуретановый грунт-праймер. Станьте дилером
+          ЭКСПЕРТ в своём регионе
+        </p>
+        <p style="margin: 0">
+          ООО «Каспол», Дзержинск, ул. Красноармейская, д. 15, литер А, офис 22<br />
+          <a href="tel:+79503470196" style="color: inherit">+7 (950) 347-01-96</a> ·
+          <a href="mailto:info@caspol.ru" style="color: inherit">info@caspol.ru</a>
+        </p>
+      </div>
+    </noscript>
   </body>
 </html>
