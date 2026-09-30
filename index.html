@@ -11,7 +11,9 @@ off=!pre&&(mm('(prefers-reduced-motion: reduce)')||!!(n.connection&&n.connection
 m=!off&&!pre&&touch&&mm('(orientation: portrait)');
 if(off)d.classList.add('fit-off');else if(m)d.classList.add('fit-m');
 var l=document.createElement('link');l.rel='preload';l.as='image';l.fetchPriority='high';
-l.href='/expert-landing/assets/hero/'+(m?'poster-m.jpg':'poster.jpg');document.head.appendChild(l)
+l.href='/expert-landing/assets/hero/'+(m?'poster-m.jpg':'poster.jpg');document.head.appendChild(l);
+if(m&&!(scrollY>0)){var f=document.createElement('link');f.rel='preload';f.as='fetch';f.crossOrigin='anonymous';
+f.href='/expert-landing/assets/hero/m2/v3/00.bin';document.head.appendChild(f)}
 }catch(e){}})()</script>
     <style>html.fit-off #root>*{display:none!important}html.fit-m section[data-hero]{height:460vh!important}html.fit-m section[data-hero] [style*="poster.jpg"]{background-image:url(/expert-landing/assets/hero/poster-m.jpg)!important}</style>
     <link rel="icon" type="image/svg+xml" href="/expert-landing/favicon.svg" />
@@ -73,7 +75,7 @@ l.href='/expert-landing/assets/hero/'+(m?'poster-m.jpg':'poster.jpg');document.h
         ]
       }
     </script>
-    <script type="module" crossorigin src="/expert-landing/assets/index-DxBWO2qF.js"></script>
+    <script type="module" crossorigin src="/expert-landing/assets/index-By_fQKbT.js"></script>
     <link rel="stylesheet" crossorigin href="/expert-landing/assets/index-Cisz8nm_.css">
     <meta name="robots" content="noindex, nofollow" />
   </head>
